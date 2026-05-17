@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  queues    Queue[]
+  createdAt DateTime @default(now())
+}
+
+model Queue {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isOpen      Boolean  @default(true)
+  adminId     String
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  entries     Entry[]
+  createdAt   DateTime @default(now())
+}
+
+model Entry {
+  id         String      @id @default(uuid())
+  name       String
+  email      String?
+  position   Int
+  status     EntryStatus @default(WAITING)
+  token      String      @unique @default(uuid())
+  notifiedAt DateTime?
+  queueId    String
+  queue      Queue       @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+}
+
+enum EntryStatus {
+  WAITING
+  NOTIFIED
+  SERVING
+  DONE
+  LEFT
+}

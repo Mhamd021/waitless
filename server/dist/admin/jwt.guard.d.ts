@@ -1,0 +1,8 @@
+import 'dotenv/config';
+import { CanActivate, ExecutionContext } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+export declare class JwtGuard implements CanActivate {
+    private jwt;
+    constructor(jwt: JwtService);
+    canActivate(context: ExecutionContext): boolean;
+}
