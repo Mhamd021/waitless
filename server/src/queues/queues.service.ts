@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
+import * as QRCode from 'qrcode';
+
 
 @Injectable()
 export class QueuesService {
@@ -40,7 +42,7 @@ export class QueuesService {
     return queue;
   }
 
-  async create(adminId: string, dto: CreateQueueDto) {
+  async create(adminId: string, dto: CreateQueueDto)  {
     return this.prisma.queue.create({
       data: {
         name: dto.name,
@@ -72,4 +74,7 @@ export class QueuesService {
       data: { isOpen: !queue.isOpen },
     });
   }
+
+  
+
 }

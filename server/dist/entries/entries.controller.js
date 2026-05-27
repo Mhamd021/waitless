@@ -40,6 +40,12 @@ let EntriesController = class EntriesController {
     complete(id, req) {
         return this.service.complete(id, req.user.sub);
     }
+    confirmArrival(queueId, req) {
+        return this.service.confirmArrival(queueId, req.user.sub);
+    }
+    markNoShow(queueId, req) {
+        return this.service.markNoShow(queueId, req.user.sub);
+    }
 };
 exports.EntriesController = EntriesController;
 __decorate([
@@ -91,6 +97,24 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], EntriesController.prototype, "complete", null);
+__decorate([
+    (0, common_1.Patch)('queues/:queueId/arrived'),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
+    __param(0, (0, common_1.Param)('queueId')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], EntriesController.prototype, "confirmArrival", null);
+__decorate([
+    (0, common_1.Patch)('queues/:queueId/no-show'),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
+    __param(0, (0, common_1.Param)('queueId')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], EntriesController.prototype, "markNoShow", null);
 exports.EntriesController = EntriesController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [entries_service_1.EntriesService])

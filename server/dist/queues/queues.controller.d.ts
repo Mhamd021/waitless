@@ -26,6 +26,8 @@ export declare class QueuesController {
             position: number;
             token: string;
             notifiedAt: Date | null;
+            servedAt: Date | null;
+            completedAt: Date | null;
             queueId: string;
         }[];
     } & {
@@ -35,6 +37,9 @@ export declare class QueuesController {
         description: string | null;
         isOpen: boolean;
         adminId: string;
+    }>;
+    getQrCode(id: string): Promise<{
+        qr: string;
     }>;
     create(dto: CreateQueueDto, req: any): Promise<{
         id: string;

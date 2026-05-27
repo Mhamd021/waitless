@@ -26,6 +26,8 @@ export declare class QueuesService {
             position: number;
             token: string;
             notifiedAt: Date | null;
+            servedAt: Date | null;
+            completedAt: Date | null;
             queueId: string;
         }[];
     } & {

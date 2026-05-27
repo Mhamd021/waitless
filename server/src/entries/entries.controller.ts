@@ -56,4 +56,22 @@ export class EntriesController {
   ) {
     return this.service.complete(id, req.user.sub);
   }
+
+@Patch('queues/:queueId/arrived')
+@UseGuards(JwtGuard)
+confirmArrival(
+  @Param('queueId') queueId: string,
+  @Request() req: any,
+) {
+  return this.service.confirmArrival(queueId, req.user.sub);
+}
+
+@Patch('queues/:queueId/no-show')
+@UseGuards(JwtGuard)
+markNoShow(
+  @Param('queueId') queueId: string,
+  @Request() req: any,
+) {
+  return this.service.markNoShow(queueId, req.user.sub);
+}
 }

@@ -39,6 +39,8 @@ model Entry {
   status     EntryStatus @default(WAITING)
   token      String      @unique @default(uuid())
   notifiedAt DateTime?
+  servedAt   DateTime?
+  completedAt DateTime?
   queueId    String
   queue      Queue       @relation(fields: [queueId], references: [id], onDelete: Cascade)
   createdAt  DateTime    @default(now())
@@ -46,8 +48,10 @@ model Entry {
 
 enum EntryStatus {
   WAITING
-  NOTIFIED
+  CALLED
+  NOTIFIED    
   SERVING
   DONE
   LEFT
+  NO_SHOW
 }

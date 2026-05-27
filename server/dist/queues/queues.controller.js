@@ -18,6 +18,7 @@ const queues_service_1 = require("./queues.service");
 const create_queue_dto_1 = require("./dto/create-queue.dto");
 const update_queue_dto_1 = require("./dto/update-queue.dto");
 const jwt_guard_1 = require("../admin/jwt.guard");
+const QRCode = require("qrcode");
 let QueuesController = class QueuesController {
     service;
     constructor(service) {
@@ -28,6 +29,11 @@ let QueuesController = class QueuesController {
     }
     findOne(id, req) {
         return this.service.findOne(id, req.user.sub);
+    }
+    async getQrCode(id) {
+        const joinUrl = `http://localhost:3000/join/${id}`;
+        const qr = await QRCode.toDataURL(joinUrl);
+        return { qr };
     }
     create(dto, req) {
         return this.service.create(req.user.sub, dto);
@@ -58,6 +64,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], QueuesController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Get)(':id/qrcode'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], QueuesController.prototype, "getQrCode", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),

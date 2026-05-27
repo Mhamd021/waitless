@@ -3,6 +3,7 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { JoinQueueDto } from './dto/join-queue.dto';
 import { QueueGateway } from '../gateway/queue.gateway';
+import { Entry } from '../../generated/prisma/client';
 export declare class EntriesService {
     private prisma;
     private notifQueue;
@@ -24,18 +25,10 @@ export declare class EntriesService {
         queueName: string;
         isQueueOpen: boolean;
         queueId: string;
+        estimatedWaitMinutes: number;
+        avgServiceTimeMinutes: number;
     }>;
-    callNext(queueId: string, adminId: string): Promise<{
-        id: string;
-        email: string | null;
-        createdAt: Date;
-        name: string;
-        status: import("../../generated/prisma/client").$Enums.EntryStatus;
-        position: number;
-        token: string;
-        notifiedAt: Date | null;
-        queueId: string;
-    }>;
+    callNext(queueId: string, adminId: string): Promise<Entry>;
     complete(entryId: string, adminId: string): Promise<{
         id: string;
         email: string | null;
@@ -45,6 +38,8 @@ export declare class EntriesService {
         position: number;
         token: string;
         notifiedAt: Date | null;
+        servedAt: Date | null;
+        completedAt: Date | null;
         queueId: string;
     }>;
     leave(token: string): Promise<{
@@ -56,14 +51,44 @@ export declare class EntriesService {
         position: number;
         token: string;
         notifiedAt: Date | null;
+        servedAt: Date | null;
+        completedAt: Date | null;
         queueId: string;
     }>;
     findAll(queueId: string, adminId: string): Promise<{
         id: string;
+        email: string | null;
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
         token: string;
     }[]>;
     private getActiveEntries;
+    getEstimatedWait(queueId: string): Promise<number>;
+    confirmArrival(queueId: string, adminId: string): Promise<{
+        id: string;
+        email: string | null;
+        createdAt: Date;
+        name: string;
+        status: import("../../generated/prisma/client").$Enums.EntryStatus;
+        position: number;
+        token: string;
+        notifiedAt: Date | null;
+        servedAt: Date | null;
+        completedAt: Date | null;
+        queueId: string;
+    }>;
+    markNoShow(queueId: string, adminId: string): Promise<{
+        id: string;
+        email: string | null;
+        createdAt: Date;
+        name: string;
+        status: import("../../generated/prisma/client").$Enums.EntryStatus;
+        position: number;
+        token: string;
+        notifiedAt: Date | null;
+        servedAt: Date | null;
+        completedAt: Date | null;
+        queueId: string;
+    }>;
 }

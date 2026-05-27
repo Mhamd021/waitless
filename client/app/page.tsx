@@ -29,6 +29,7 @@ export default function AdminPage() {
   };
 }, []);
 
+
   async function login() {
     setError('');
     const res = await fetch(`${API}/admin/login`, {
@@ -103,6 +104,25 @@ export default function AdminPage() {
       setActiveQueue((q: any) => ({ ...q, isOpen: !q.isOpen }));
     }
   }
+  async function confirmArrival() {
+  if (!activeQueue) return;
+  await fetch(`${API}/queues/${activeQueue.id}/arrived`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  fetchEntries(activeQueue.id);
+}
+
+async function markNoShow() {
+  if (!activeQueue) return;
+  await fetch(`${API}/queues/${activeQueue.id}/no-show`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  fetchEntries(activeQueue.id);
+}
+
+  
 
   async function callNext() {
     if (!activeQueue) return;
@@ -112,6 +132,28 @@ export default function AdminPage() {
     });
     fetchEntries(activeQueue.id);
   }
+ const [qr, setQr] = useState(null);
+const [open, setOpen] = useState(false);
+
+async function getQr() {
+  if (!activeQueue) return;
+
+  const res = await fetch(`${API}/queues/${activeQueue.id}/qrcode`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+  setQr(data.qr);
+  setOpen(true); 
+}
+
+function downloadQr(base64: string) {
+  const link = document.createElement("a");
+  link.href = base64;
+  link.download = "queue-qrcode.png";
+  link.click();
+}
+
 
   async function completeEntry(id: string) {
     await fetch(`${API}/entries/${id}/complete`, {
@@ -119,6 +161,16 @@ export default function AdminPage() {
       headers: { Authorization: `Bearer ${token}` },
     });
     fetchEntries(activeQueue.id);
+  }
+  async function deleteQueue()
+  {
+    if (!activeQueue) return;
+    await fetch(`${API}/queues/${activeQueue.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setActiveQueue(null);
+    fetchQueues(token!);
   }
 
   function logout() {
@@ -249,6 +301,48 @@ export default function AdminPage() {
                   className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors">
                   Copy Join Link
                 </button>
+                {open && (
+  <div 
+    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    onClick={() => setOpen(false)}
+  >
+    <div 
+      className="bg-white rounded-lg p-6 w-[350px] shadow-xl relative"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h2 className="text-xl font-semibold mb-4 text-center">QR Code</h2>
+
+      <img 
+        src={qr!} 
+        alt="QR Code" 
+        className="w-64 h-64 mx-auto mb-4"
+      />
+
+      <div className="flex justify-between mt-4">
+        <button
+          onClick={() => downloadQr(qr!)}
+          className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+        >
+          Download
+        </button>
+
+        <button
+          onClick={() => setOpen(false)}
+          className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+  
+                <button onClick={getQr}
+                  className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition-colors">
+                  Show QR Code
+                </button>
+
                 <button onClick={() => toggleQueue(activeQueue.id)}
                   className={`text-sm px-4 py-2 rounded-lg transition-colors ${
                     activeQueue.isOpen
@@ -257,9 +351,26 @@ export default function AdminPage() {
                   }`}>
                   {activeQueue.isOpen ? 'Close Queue' : 'Open Queue'}
                 </button>
-                <button onClick={callNext}
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors">
-                  Call Next →
+                {entries.some(e => e.status === 'CALLED') ? (
+    <>
+      <button onClick={confirmArrival}
+        className="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+        ✓ Arrived
+      </button>
+      <button onClick={markNoShow}
+        className="bg-red-900 hover:bg-red-800 text-red-300 text-sm px-4 py-2 rounded-lg transition-colors">
+        No Show
+      </button>
+    </>
+  ) : (
+    <button onClick={callNext}
+      className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors">
+      Call Next →
+    </button>
+  )}
+                <button onClick={deleteQueue}
+                  className="bg-red-600 hover:bg-red-500 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors">
+                  Delete Queue
                 </button>
               </div>
             </div>

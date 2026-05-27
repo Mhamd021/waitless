@@ -139,7 +139,13 @@ export default function TrackPage({
               )}
             </>
           )}
+           {data.estimatedWaitMinutes > 0 && (
+  <p className="text-gray-500 text-sm mt-2">
+    ⏱ Estimated wait: ~{data.estimatedWaitMinutes} min
+  </p>
+)}
         </div>
+       
 
         {/* Queue Status */}
         <div className="flex items-center justify-center gap-2 mb-6">
@@ -150,6 +156,7 @@ export default function TrackPage({
             {data.isQueueOpen ? 'Queue is open' : 'Queue is closed'}
           </span>
         </div>
+        
 
         {/* Leave Button */}
         {!['DONE', 'LEFT'].includes(data.status) && (
