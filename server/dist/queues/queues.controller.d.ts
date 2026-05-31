@@ -4,40 +4,22 @@ import { UpdateQueueDto } from './dto/update-queue.dto';
 export declare class QueuesController {
     private service;
     constructor(service: QueuesService);
-    findAll(req: any): Promise<({
-        _count: {
-            entries: number;
-        };
-    } & {
+    findAll(req: any): Promise<{
         id: string;
         createdAt: Date;
         name: string;
         description: string | null;
         isOpen: boolean;
         adminId: string;
-    })[]>;
+    }[]>;
     findOne(id: string, req: any): Promise<{
-        entries: {
-            id: string;
-            email: string | null;
-            createdAt: Date;
-            name: string;
-            status: import("../../generated/prisma/client").$Enums.EntryStatus;
-            position: number;
-            token: string;
-            notifiedAt: Date | null;
-            servedAt: Date | null;
-            completedAt: Date | null;
-            queueId: string;
-        }[];
-    } & {
         id: string;
         createdAt: Date;
         name: string;
         description: string | null;
         isOpen: boolean;
         adminId: string;
-    }>;
+    } | null>;
     getQrCode(id: string): Promise<{
         qr: string;
     }>;
@@ -65,12 +47,5 @@ export declare class QueuesController {
         isOpen: boolean;
         adminId: string;
     }>;
-    delete(id: string, req: any): Promise<{
-        id: string;
-        createdAt: Date;
-        name: string;
-        description: string | null;
-        isOpen: boolean;
-        adminId: string;
-    }>;
+    delete(id: string, req: any): Promise<void>;
 }

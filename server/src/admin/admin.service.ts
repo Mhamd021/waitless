@@ -18,7 +18,7 @@ export class AdminService {
     private jwt: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto): Promise< { access_token: string } > {
  
   if (dto.secretKey !== process.env.ADMIN_REGISTER_SECRET) {
     throw new ForbiddenException('Invalid registration key');
@@ -37,7 +37,7 @@ export class AdminService {
   return this.signToken(admin.id, admin.email);
 }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<{access_token:string}> {
     const admin = await this.prisma.admin.findUnique({
       where: { email: dto.email },
     });

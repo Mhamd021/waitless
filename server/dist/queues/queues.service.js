@@ -11,74 +11,34 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueuesService = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../prisma/prisma.service");
+const queue_repository_1 = require("./queue.repository");
 let QueuesService = class QueuesService {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+    queueRepository;
+    constructor(queueRepository) {
+        this.queueRepository = queueRepository;
     }
     async findAll(adminId) {
-        return this.prisma.queue.findMany({
-            where: { adminId },
-            include: {
-                _count: {
-                    select: {
-                        entries: {
-                            where: { status: 'WAITING' }
-                        }
-                    }
-                }
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        return this.queueRepository.findAll(adminId);
     }
     async findOne(id, adminId) {
-        const queue = await this.prisma.queue.findFirst({
-            where: { id, adminId },
-            include: {
-                entries: {
-                    where: {
-                        status: { in: ['WAITING', 'NOTIFIED', 'SERVING'] }
-                    },
-                    orderBy: { position: 'asc' },
-                },
-            },
-        });
-        if (!queue)
-            throw new common_1.NotFoundException('Queue not found');
-        return queue;
+        return this.queueRepository.findOne(id, adminId);
     }
     async create(adminId, dto) {
-        return this.prisma.queue.create({
-            data: {
-                name: dto.name,
-                description: dto.description,
-                adminId,
-            },
-        });
+        return this.queueRepository.create(adminId, dto);
     }
     async update(id, adminId, dto) {
-        await this.findOne(id, adminId);
-        return this.prisma.queue.update({
-            where: { id },
-            data: dto,
-        });
+        return this.queueRepository.update(id, adminId, dto);
     }
     async delete(id, adminId) {
-        await this.findOne(id, adminId);
-        return this.prisma.queue.delete({ where: { id } });
+        return this.queueRepository.delete(id, adminId);
     }
     async toggleOpen(id, adminId) {
-        const queue = await this.findOne(id, adminId);
-        return this.prisma.queue.update({
-            where: { id },
-            data: { isOpen: !queue.isOpen },
-        });
+        return this.queueRepository.toggleOpen(id, adminId);
     }
 };
 exports.QueuesService = QueuesService;
 exports.QueuesService = QueuesService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [queue_repository_1.QueueRepository])
 ], QueuesService);
 //# sourceMappingURL=queues.service.js.map

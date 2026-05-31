@@ -17,67 +17,49 @@ require("dotenv/config");
 const common_1 = require("@nestjs/common");
 const bullmq_1 = require("@nestjs/bullmq");
 const bullmq_2 = require("bullmq");
-const prisma_service_1 = require("../prisma/prisma.service");
 const queue_gateway_1 = require("../gateway/queue.gateway");
+const entries_repository_1 = require("./entries.repository");
+const queue_repository_1 = require("../queues/queue.repository");
 let EntriesService = class EntriesService {
-    prisma;
+    entryRepo;
+    queueRepo;
     notifQueue;
     gateway;
-    constructor(prisma, notifQueue, gateway) {
-        this.prisma = prisma;
+    constructor(entryRepo, queueRepo, notifQueue, gateway) {
+        this.entryRepo = entryRepo;
+        this.queueRepo = queueRepo;
         this.notifQueue = notifQueue;
         this.gateway = gateway;
     }
     async join(queueId, dto) {
-        const queue = await this.prisma.queue.findFirst({
-            where: { id: queueId, isOpen: true },
-        });
+        const queue = await this.queueRepo.findOpenById(queueId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found or closed');
-        const lastEntry = await this.prisma.entry.findFirst({
-            where: { queueId },
-            orderBy: { position: 'desc' },
-        });
+        const lastEntry = await this.entryRepo.findLastInQueue(queueId);
         const nextPosition = lastEntry ? lastEntry.position + 1 : 1;
-        const entry = await this.prisma.entry.create({
-            data: {
-                name: dto.name,
-                email: dto.email,
-                position: nextPosition,
-                queueId,
-            },
-            include: { queue: { select: { name: true } } },
+        const entry = await this.entryRepo.create({
+            name: dto.name,
+            email: dto.email,
+            position: nextPosition,
+            queueId,
         });
-        const entries = await this.getActiveEntries(queueId);
-        this.gateway.notifyQueueUpdate(queueId, {
-            type: 'next-called',
-            entries,
-        });
+        const entries = await this.entryRepo.findActive(queueId);
+        this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
         return {
             id: entry.id,
             name: entry.name,
             position: nextPosition,
             token: entry.token,
-            queueName: entry.queue.name,
-            trackingUrl: `http://localhost:3001/track/${entry.token}`,
+            queueName: queue.name,
+            trackingUrl: `http://localhost:3000/track/${entry.token}`,
         };
     }
     async getStatus(token) {
-        const entry = await this.prisma.entry.findUnique({
-            where: { token },
-            include: { queue: { select: { name: true, isOpen: true } } },
-        });
+        const entry = await this.entryRepo.findByToken(token);
         if (!entry)
             throw new common_1.NotFoundException('Entry not found');
-        const ahead = await this.prisma.entry.count({
-            where: {
-                queueId: entry.queueId,
-                position: { lt: entry.position },
-                status: { in: ['WAITING', 'NOTIFIED'] },
-            },
-        });
+        const ahead = await this.entryRepo.countAhead(entry.queueId, entry.position);
         const avgServiceTime = await this.getEstimatedWait(entry.queueId);
-        const estimatedWaitMinutes = ahead * avgServiceTime;
         return {
             name: entry.name,
             position: entry.position,
@@ -86,37 +68,26 @@ let EntriesService = class EntriesService {
             queueName: entry.queue.name,
             isQueueOpen: entry.queue.isOpen,
             queueId: entry.queueId,
-            estimatedWaitMinutes,
+            estimatedWaitMinutes: ahead * avgServiceTime,
             avgServiceTimeMinutes: avgServiceTime,
         };
     }
     async callNext(queueId, adminId) {
-        const queue = await this.prisma.queue.findFirst({
-            where: { id: queueId, adminId },
-        });
+        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
-        const currentlyServing = await this.prisma.entry.findFirst({
-            where: { queueId, status: 'SERVING' },
-        });
+        const currentlyServing = await this.entryRepo.findByStatus(queueId, 'SERVING');
         if (currentlyServing) {
-            await this.prisma.entry.update({
-                where: { id: currentlyServing.id },
-                data: { status: 'DONE', completedAt: new Date() },
+            await this.entryRepo.updateById(currentlyServing.id, {
+                status: 'DONE',
+                completedAt: new Date(),
             });
         }
-        const next = await this.prisma.entry.findFirst({
-            where: {
-                queueId,
-                status: { in: ['WAITING', 'NOTIFIED'] }
-            },
-            orderBy: { position: 'asc' },
-        });
+        const next = await this.entryRepo.findNextWaiting(queueId);
         if (!next)
             throw new common_1.BadRequestException('Queue is empty');
-        const updated = await this.prisma.entry.update({
-            where: { id: next.id },
-            data: { status: 'CALLED' },
+        const updated = await this.entryRepo.updateById(next.id, {
+            status: 'CALLED',
         });
         if (next.email) {
             await this.notifQueue.add('your-turn-now', {
@@ -125,14 +96,7 @@ let EntriesService = class EntriesService {
                 queueName: queue.name,
             });
         }
-        const secondInLine = await this.prisma.entry.findFirst({
-            where: {
-                queueId,
-                status: { in: ['WAITING', 'NOTIFIED'] },
-                id: { not: next.id },
-            },
-            orderBy: { position: 'asc' },
-        });
+        const secondInLine = await this.entryRepo.findSecondWaiting(queueId, next.id);
         if (secondInLine?.email) {
             await this.notifQueue.add('your-turn-soon', {
                 email: secondInLine.email,
@@ -142,138 +106,82 @@ let EntriesService = class EntriesService {
                 trackingUrl: `http://localhost:3000/track/${secondInLine.token}`,
             }, { delay: 30_000 });
         }
-        const entries = await this.getActiveEntries(queueId);
-        this.gateway.notifyQueueUpdate(queueId, {
-            type: 'next-called',
-            entries,
-        });
+        const entries = await this.entryRepo.findActive(queueId);
+        this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
         return updated;
     }
     async complete(entryId, adminId) {
-        const entry = await this.prisma.entry.findFirst({
-            where: { id: entryId, queue: { adminId } },
-        });
+        const entry = await this.entryRepo.findByIdAndAdmin(entryId, adminId);
         if (!entry)
             throw new common_1.NotFoundException('Entry not found');
-        const updated = await this.prisma.entry.update({
-            where: { id: entryId },
-            data: { status: 'DONE', completedAt: new Date() },
+        const updated = await this.entryRepo.updateById(entryId, {
+            status: 'DONE',
+            completedAt: new Date(),
         });
-        const entries = await this.getActiveEntries(entry.queueId);
-        this.gateway.notifyQueueUpdate(entry.queueId, {
-            type: 'next-called',
-            entries,
-        });
+        const entries = await this.entryRepo.findActive(entry.queueId);
+        this.gateway.notifyQueueUpdate(entry.queueId, { type: 'next-called', entries });
         return updated;
     }
     async leave(token) {
-        const entry = await this.prisma.entry.findUnique({
-            where: { token },
-        });
+        const entry = await this.entryRepo.findByToken(token);
         if (!entry)
             throw new common_1.NotFoundException('Entry not found');
         if (entry.status === 'DONE' || entry.status === 'LEFT') {
             throw new common_1.BadRequestException('Already done or left');
         }
-        const updated = await this.prisma.entry.update({
-            where: { token },
-            data: { status: 'LEFT' },
-        });
-        const entries = await this.getActiveEntries(entry.queueId);
-        this.gateway.notifyQueueUpdate(entry.queueId, {
-            type: 'entry-left',
-            entries,
-        });
+        const updated = await this.entryRepo.updateByToken(token, { status: 'LEFT' });
+        const entries = await this.entryRepo.findActive(entry.queueId);
+        this.gateway.notifyQueueUpdate(entry.queueId, { type: 'entry-left', entries });
         return updated;
     }
     async findAll(queueId, adminId) {
-        const queue = await this.prisma.queue.findFirst({
-            where: { id: queueId, adminId },
-        });
+        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
-        return this.getActiveEntries(queueId);
-    }
-    async getActiveEntries(queueId) {
-        return this.prisma.entry.findMany({
-            where: {
-                queueId,
-                status: { in: ['WAITING', 'NOTIFIED', 'SERVING', 'CALLED'] },
-            },
-            orderBy: { position: 'asc' },
-            select: {
-                id: true,
-                name: true,
-                position: true,
-                status: true,
-                token: true,
-                email: true,
-            },
-        });
-    }
-    async getEstimatedWait(queueId) {
-        const completed = await this.prisma.entry.findMany({
-            where: { queueId, status: 'DONE', servedAt: { not: null }, completedAt: { not: null }
-            },
-            orderBy: { completedAt: 'desc' },
-            take: 5
-        });
-        if (completed.length === 0)
-            return 0;
-        const avgMinutes = completed.reduce((sum, entry) => {
-            const diff = entry.completedAt.getTime()
-                - entry.servedAt.getTime();
-            return sum + diff / 60000;
-        }, 0) / completed.length;
-        return Math.round(avgMinutes);
+        return this.entryRepo.findActive(queueId);
     }
     async confirmArrival(queueId, adminId) {
-        const queue = await this.prisma.queue.findFirst({
-            where: { id: queueId, adminId },
-        });
+        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
-        const called = await this.prisma.entry.findFirst({
-            where: { queueId, status: 'CALLED' },
-            orderBy: { position: 'asc' },
-        });
+        const called = await this.entryRepo.findByStatus(queueId, 'CALLED');
         if (!called)
             throw new common_1.BadRequestException('No called customer');
-        const updated = await this.prisma.entry.update({
-            where: { id: called.id },
-            data: { status: 'SERVING', servedAt: new Date() },
+        const updated = await this.entryRepo.updateById(called.id, {
+            status: 'SERVING',
+            servedAt: new Date(),
         });
-        const entries = await this.getActiveEntries(queueId);
-        this.gateway.notifyQueueUpdate(queueId, {
-            type: 'next-called',
-            entries,
-        });
+        const entries = await this.entryRepo.findActive(queueId);
+        this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
         return updated;
     }
     async markNoShow(queueId, adminId) {
-        const queue = await this.prisma.queue.findFirst({
-            where: { id: queueId, adminId },
-        });
+        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
-        const called = await this.prisma.entry.findFirst({
-            where: { queueId, status: 'CALLED' },
-            orderBy: { position: 'asc' },
-        });
+        const called = await this.entryRepo.findByStatus(queueId, 'CALLED');
         if (!called)
             throw new common_1.BadRequestException('No called customer');
-        await this.prisma.entry.update({
-            where: { id: called.id },
-            data: { status: 'NO_SHOW' },
-        });
+        await this.entryRepo.updateById(called.id, { status: 'NO_SHOW' });
         return this.callNext(queueId, adminId);
+    }
+    async getEstimatedWait(queueId) {
+        const completed = await this.entryRepo.findCompleted(queueId, 5);
+        if (completed.length === 0)
+            return 0;
+        const avgMinutes = completed.reduce((sum, entry) => {
+            const diff = entry.completedAt.getTime() - entry.servedAt.getTime();
+            return sum + diff / 60000;
+        }, 0) / completed.length;
+        return Math.round(avgMinutes);
     }
 };
 exports.EntriesService = EntriesService;
 exports.EntriesService = EntriesService = __decorate([
     (0, common_1.Injectable)(),
-    __param(1, (0, bullmq_1.InjectQueue)('notifications')),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+    __param(2, (0, bullmq_1.InjectQueue)('notifications')),
+    __metadata("design:paramtypes", [entries_repository_1.EntryRepository,
+        queue_repository_1.QueueRepository,
         bullmq_2.Queue,
         queue_gateway_1.QueueGateway])
 ], EntriesService);

@@ -3,25 +3,8 @@ import { JoinQueueDto } from './dto/join-queue.dto';
 export declare class EntriesController {
     private service;
     constructor(service: EntriesService);
-    join(queueId: string, dto: JoinQueueDto): Promise<{
-        id: string;
-        name: string;
-        position: number;
-        token: string;
-        queueName: string;
-        trackingUrl: string;
-    }>;
-    getStatus(token: string): Promise<{
-        name: string;
-        position: number;
-        status: import("../../generated/prisma/client").$Enums.EntryStatus;
-        ahead: number;
-        queueName: string;
-        isQueueOpen: boolean;
-        queueId: string;
-        estimatedWaitMinutes: number;
-        avgServiceTimeMinutes: number;
-    }>;
+    join(queueId: string, dto: JoinQueueDto): Promise<import("./dto/entry-response.dto").JoinQueueResponse>;
+    getStatus(token: string): Promise<import("./dto/entry-response.dto").EntryStatusResponse>;
     leave(token: string): Promise<{
         id: string;
         email: string | null;
@@ -35,14 +18,7 @@ export declare class EntriesController {
         completedAt: Date | null;
         queueId: string;
     }>;
-    findAll(queueId: string, req: any): Promise<{
-        id: string;
-        email: string | null;
-        name: string;
-        status: import("../../generated/prisma/client").$Enums.EntryStatus;
-        position: number;
-        token: string;
-    }[]>;
+    findAll(queueId: string, req: any): Promise<import("./dto/entry-response.dto").ActiveEntry[]>;
     callNext(queueId: string, req: any): Promise<{
         id: string;
         email: string | null;

@@ -11,15 +11,16 @@ const common_1 = require("@nestjs/common");
 const queues_service_1 = require("./queues.service");
 const queues_controller_1 = require("./queues.controller");
 const admin_module_1 = require("../admin/admin.module");
+const queue_repository_1 = require("./queue.repository");
 let QueuesModule = class QueuesModule {
 };
 exports.QueuesModule = QueuesModule;
 exports.QueuesModule = QueuesModule = __decorate([
     (0, common_1.Module)({
         imports: [admin_module_1.AdminModule],
-        providers: [queues_service_1.QueuesService],
+        providers: [queues_service_1.QueuesService, queue_repository_1.QueueRepository],
         controllers: [queues_controller_1.QueuesController],
-        exports: [queues_service_1.QueuesService],
+        exports: [queues_service_1.QueuesService, queue_repository_1.QueueRepository],
     })
 ], QueuesModule);
 //# sourceMappingURL=queues.module.js.map

@@ -29,6 +29,7 @@ model Queue {
   admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
   entries     Entry[]
   createdAt   DateTime @default(now())
+  @index([adminId])
 }
 
 model Entry {
@@ -44,6 +45,9 @@ model Entry {
   queueId    String
   queue      Queue       @relation(fields: [queueId], references: [id], onDelete: Cascade)
   createdAt  DateTime    @default(now())
+  @@index([token])
+  @@index([queueId,status])
+  @index([queueId,position])
 }
 
 enum EntryStatus {
