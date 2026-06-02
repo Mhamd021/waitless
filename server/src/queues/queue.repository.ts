@@ -60,7 +60,8 @@ export class QueueRepository {
       });
     }
   
-    async delete(id: string, adminId: string) :Promise<void>{
+    async delete(id: string, adminId: string) :Promise<void>
+    {
   
        await this.prisma.queue.delete({ where: { id, adminId } });
     }
@@ -73,11 +74,11 @@ export class QueueRepository {
       });
     }
 
-    async findByIdAndAdmin(queueId: string, adminId: string): Promise<Queue | null> {
-      return this.prisma.queue.findFirst({
-        where: { id: queueId, adminId },
-      });
-    }
+    // async findByIdAndAdmin(queueId: string, adminId: string): Promise<Queue | null> {
+    //   return this.prisma.queue.findFirst({
+    //     where: { id: queueId, adminId },
+    //   });
+    // }
     async findOpenById(queueId: string): Promise<Queue | null> {
       
       return this.prisma.queue.findUnique({

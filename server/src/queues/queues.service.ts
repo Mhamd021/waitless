@@ -17,6 +17,7 @@ export class QueuesService {
   }
 
   async create(adminId: string, dto: CreateQueueDto) {
+    
     return this.queueRepository.create(adminId, dto);
   }
 

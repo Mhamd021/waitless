@@ -73,10 +73,9 @@ export class EntriesService {
   }
 
   async callNext(queueId: string, adminId: string): Promise<Entry> {
-    const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+    const queue = await this.queueRepo.findOne(queueId, adminId);
     if (!queue) throw new NotFoundException('Queue not found');
 
-    // أنهِ الزبون الحالي
     const currentlyServing = await this.entryRepo.findByStatus(queueId, 'SERVING');
     if (currentlyServing) {
       await this.entryRepo.updateById(currentlyServing.id, {
@@ -84,8 +83,6 @@ export class EntriesService {
         completedAt: new Date(),
       });
     }
-
-    // الزبون التالي
     const next = await this.entryRepo.findNextWaiting(queueId);
     if (!next) throw new BadRequestException('Queue is empty');
 
@@ -93,7 +90,6 @@ export class EntriesService {
       status: 'CALLED',
     });
 
-    // إشعار الزبون الحالي
     if (next.email) {
       await this.notifQueue.add('your-turn-now', {
         email: next.email,
@@ -102,7 +98,6 @@ export class EntriesService {
       });
     }
 
-    // إشعار رقم 2
     const secondInLine = await this.entryRepo.findSecondWaiting(queueId, next.id);
     if (secondInLine?.email) {
       await this.notifQueue.add('your-turn-soon', {
@@ -151,13 +146,13 @@ export class EntriesService {
   }
 
   async findAll(queueId: string, adminId: string) {
-    const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+    const queue = await this.queueRepo.findOne(queueId, adminId);
     if (!queue) throw new NotFoundException('Queue not found');
     return this.entryRepo.findActive(queueId);
   }
 
   async confirmArrival(queueId: string, adminId: string): Promise<Entry> {
-    const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+    const queue = await this.queueRepo.findOne(queueId, adminId);
     if (!queue) throw new NotFoundException('Queue not found');
 
     const called = await this.entryRepo.findByStatus(queueId, 'CALLED');
@@ -175,7 +170,7 @@ export class EntriesService {
   }
 
   async markNoShow(queueId: string, adminId: string): Promise<Entry> {
-    const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+    const queue = await this.queueRepo.findOne(queueId, adminId);
     if (!queue) throw new NotFoundException('Queue not found');
 
     const called = await this.entryRepo.findByStatus(queueId, 'CALLED');

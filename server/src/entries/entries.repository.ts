@@ -112,6 +112,5 @@ async updateById(id: string, data: any) {
 async updateByToken(token: string, data: any) {
   return this.prisma.entry.update({ where: { token }, data });
 }
-findOpenById(queueId: string) {}
   
 }
