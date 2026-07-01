@@ -11,6 +11,5 @@ export declare class QueueRepository {
     update(id: string, adminId: string, dto: UpdateQueueDto): Promise<Queue>;
     delete(id: string, adminId: string): Promise<void>;
     toggleOpen(id: string, adminId: string): Promise<Queue>;
-    findByIdAndAdmin(queueId: string, adminId: string): Promise<Queue | null>;
     findOpenById(queueId: string): Promise<Queue | null>;
 }

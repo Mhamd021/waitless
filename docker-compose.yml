@@ -12,6 +12,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  mongodb:
+    image: mongo:7
+    container_name: waitless_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: waitless_events
+
   redis:
     image: redis:7-alpine
     container_name: waitless_redis
@@ -21,3 +32,4 @@ services:
 
 volumes:
   pgdata:
+  mongo_data:

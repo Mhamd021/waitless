@@ -74,11 +74,6 @@ let QueueRepository = class QueueRepository {
             data: { isOpen: queue.isOpen },
         });
     }
-    async findByIdAndAdmin(queueId, adminId) {
-        return this.prisma.queue.findFirst({
-            where: { id: queueId, adminId },
-        });
-    }
     async findOpenById(queueId) {
         return this.prisma.queue.findUnique({
             where: { id: queueId, isOpen: true },

@@ -12,12 +12,13 @@ const queues_service_1 = require("./queues.service");
 const queues_controller_1 = require("./queues.controller");
 const admin_module_1 = require("../admin/admin.module");
 const queue_repository_1 = require("./queue.repository");
+const queue_event_module_1 = require("../queue-events/queue-event.module");
 let QueuesModule = class QueuesModule {
 };
 exports.QueuesModule = QueuesModule;
 exports.QueuesModule = QueuesModule = __decorate([
     (0, common_1.Module)({
-        imports: [admin_module_1.AdminModule],
+        imports: [admin_module_1.AdminModule, queue_event_module_1.QueueEventModule],
         providers: [queues_service_1.QueuesService, queue_repository_1.QueueRepository],
         controllers: [queues_controller_1.QueuesController],
         exports: [queues_service_1.QueuesService, queue_repository_1.QueueRepository],

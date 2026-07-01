@@ -17,12 +17,14 @@ const queues_module_1 = require("./queues/queues.module");
 const entries_module_1 = require("./entries/entries.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const gateway_module_1 = require("./gateway/gateway.module");
+const mongoose_1 = require("@nestjs/mongoose");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI),
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             bullmq_1.BullModule.forRoot({
                 connection: { host: 'localhost', port: 6379 },

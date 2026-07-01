@@ -6,12 +6,14 @@ import { Entry } from '../../generated/prisma/client';
 import { JoinQueueResponse, EntryStatusResponse } from './dto/entry-response.dto';
 import { EntryRepository } from './entries.repository';
 import { QueueRepository } from '../queues/queue.repository';
+import { QueueEventService } from '../queue-events/queue-event.service';
 export declare class EntriesService {
     private entryRepo;
     private queueRepo;
     private notifQueue;
     private gateway;
-    constructor(entryRepo: EntryRepository, queueRepo: QueueRepository, notifQueue: Queue, gateway: QueueGateway);
+    private queueEventService;
+    constructor(entryRepo: EntryRepository, queueRepo: QueueRepository, notifQueue: Queue, gateway: QueueGateway, queueEventService: QueueEventService);
     join(queueId: string, dto: JoinQueueDto): Promise<JoinQueueResponse>;
     getStatus(token: string): Promise<EntryStatusResponse>;
     callNext(queueId: string, adminId: string): Promise<Entry>;

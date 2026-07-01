@@ -19,10 +19,13 @@ const create_queue_dto_1 = require("./dto/create-queue.dto");
 const update_queue_dto_1 = require("./dto/update-queue.dto");
 const jwt_guard_1 = require("../admin/jwt.guard");
 const QRCode = require("qrcode");
+const queue_event_service_1 = require("../queue-events/queue-event.service");
 let QueuesController = class QueuesController {
     service;
-    constructor(service) {
+    queueEventService;
+    constructor(service, queueEventService) {
         this.service = service;
+        this.queueEventService = queueEventService;
     }
     findAll(req) {
         return this.service.findAll(req.user.sub);
@@ -46,6 +49,9 @@ let QueuesController = class QueuesController {
     }
     delete(id, req) {
         return this.service.delete(id, req.user.sub);
+    }
+    async getStats(queueId) {
+        return this.queueEventService.getQueueStats(queueId);
     }
 };
 exports.QueuesController = QueuesController;
@@ -104,9 +110,17 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], QueuesController.prototype, "delete", null);
+__decorate([
+    (0, common_1.Get)(':id/stats'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], QueuesController.prototype, "getStats", null);
 exports.QueuesController = QueuesController = __decorate([
     (0, common_1.Controller)('queues'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
-    __metadata("design:paramtypes", [queues_service_1.QueuesService])
+    __metadata("design:paramtypes", [queues_service_1.QueuesService,
+        queue_event_service_1.QueueEventService])
 ], QueuesController);
 //# sourceMappingURL=queues.controller.js.map

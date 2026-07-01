@@ -20,16 +20,20 @@ const bullmq_2 = require("bullmq");
 const queue_gateway_1 = require("../gateway/queue.gateway");
 const entries_repository_1 = require("./entries.repository");
 const queue_repository_1 = require("../queues/queue.repository");
+const queue_event_service_1 = require("../queue-events/queue-event.service");
+const queue_event_schema_1 = require("../queue-events/queue-event.schema");
 let EntriesService = class EntriesService {
     entryRepo;
     queueRepo;
     notifQueue;
     gateway;
-    constructor(entryRepo, queueRepo, notifQueue, gateway) {
+    queueEventService;
+    constructor(entryRepo, queueRepo, notifQueue, gateway, queueEventService) {
         this.entryRepo = entryRepo;
         this.queueRepo = queueRepo;
         this.notifQueue = notifQueue;
         this.gateway = gateway;
+        this.queueEventService = queueEventService;
     }
     async join(queueId, dto) {
         const queue = await this.queueRepo.findOpenById(queueId);
@@ -45,6 +49,12 @@ let EntriesService = class EntriesService {
         });
         const entries = await this.entryRepo.findActive(queueId);
         this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
+        await this.queueEventService.record({
+            queueId,
+            eventType: queue_event_schema_1.QueueEventType.CUSTOMER_JOINED,
+            token: entry.token,
+            metadata: { position: entry.position },
+        });
         return {
             id: entry.id,
             name: entry.name,
@@ -73,7 +83,7 @@ let EntriesService = class EntriesService {
         };
     }
     async callNext(queueId, adminId) {
-        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+        const queue = await this.queueRepo.findOne(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
         const currentlyServing = await this.entryRepo.findByStatus(queueId, 'SERVING');
@@ -108,6 +118,12 @@ let EntriesService = class EntriesService {
         }
         const entries = await this.entryRepo.findActive(queueId);
         this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
+        await this.queueEventService.record({
+            queueId,
+            eventType: queue_event_schema_1.QueueEventType.CALLED_NEXT,
+            token: next.token,
+            metadata: { entryId: next.id, position: next.position },
+        });
         return updated;
     }
     async complete(entryId, adminId) {
@@ -132,16 +148,22 @@ let EntriesService = class EntriesService {
         const updated = await this.entryRepo.updateByToken(token, { status: 'LEFT' });
         const entries = await this.entryRepo.findActive(entry.queueId);
         this.gateway.notifyQueueUpdate(entry.queueId, { type: 'entry-left', entries });
+        await this.queueEventService.record({
+            queueId: entry.queueId,
+            eventType: queue_event_schema_1.QueueEventType.CUSTOMER_LEFT,
+            token: entry.token,
+            metadata: { entryId: entry.id, position: entry.position },
+        });
         return updated;
     }
     async findAll(queueId, adminId) {
-        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+        const queue = await this.queueRepo.findOne(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
         return this.entryRepo.findActive(queueId);
     }
     async confirmArrival(queueId, adminId) {
-        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+        const queue = await this.queueRepo.findOne(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
         const called = await this.entryRepo.findByStatus(queueId, 'CALLED');
@@ -153,16 +175,28 @@ let EntriesService = class EntriesService {
         });
         const entries = await this.entryRepo.findActive(queueId);
         this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
+        await this.queueEventService.record({
+            queueId,
+            eventType: queue_event_schema_1.QueueEventType.ARRIVED,
+            token: called.token,
+            metadata: { entryId: called.id, position: called.position },
+        });
         return updated;
     }
     async markNoShow(queueId, adminId) {
-        const queue = await this.queueRepo.findByIdAndAdmin(queueId, adminId);
+        const queue = await this.queueRepo.findOne(queueId, adminId);
         if (!queue)
             throw new common_1.NotFoundException('Queue not found');
         const called = await this.entryRepo.findByStatus(queueId, 'CALLED');
         if (!called)
             throw new common_1.BadRequestException('No called customer');
         await this.entryRepo.updateById(called.id, { status: 'NO_SHOW' });
+        await this.queueEventService.record({
+            queueId,
+            eventType: queue_event_schema_1.QueueEventType.NO_SHOW,
+            token: called.token,
+            metadata: { entryId: called.id },
+        });
         return this.callNext(queueId, adminId);
     }
     async getEstimatedWait(queueId) {
@@ -183,6 +217,7 @@ exports.EntriesService = EntriesService = __decorate([
     __metadata("design:paramtypes", [entries_repository_1.EntryRepository,
         queue_repository_1.QueueRepository,
         bullmq_2.Queue,
-        queue_gateway_1.QueueGateway])
+        queue_gateway_1.QueueGateway,
+        queue_event_service_1.QueueEventService])
 ], EntriesService);
 //# sourceMappingURL=entries.service.js.map

@@ -30,12 +30,6 @@ let EntryRepository = class EntryRepository {
     async create(data) {
         return this.prisma.entry.create({ data, include: { queue: { select: { name: true } } } });
     }
-    async update(where, data) {
-        return this.prisma.entry.update({ where, data });
-    }
-    async count(where) {
-        return this.prisma.entry.count({ where });
-    }
     async findActive(queueId) {
         return this.prisma.entry.findMany({
             where: {
@@ -108,7 +102,6 @@ let EntryRepository = class EntryRepository {
     async updateByToken(token, data) {
         return this.prisma.entry.update({ where: { token }, data });
     }
-    findOpenById(queueId) { }
 };
 exports.EntryRepository = EntryRepository;
 exports.EntryRepository = EntryRepository = __decorate([

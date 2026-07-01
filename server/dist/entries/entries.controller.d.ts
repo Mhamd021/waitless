@@ -12,11 +12,11 @@ export declare class EntriesController {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
     findAll(queueId: string, req: any): Promise<import("./dto/entry-response.dto").ActiveEntry[]>;
     callNext(queueId: string, req: any): Promise<{
@@ -26,11 +26,11 @@ export declare class EntriesController {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
     complete(id: string, req: any): Promise<{
         id: string;
@@ -39,11 +39,11 @@ export declare class EntriesController {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
     confirmArrival(queueId: string, req: any): Promise<{
         id: string;
@@ -52,11 +52,11 @@ export declare class EntriesController {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
     markNoShow(queueId: string, req: any): Promise<{
         id: string;
@@ -65,10 +65,10 @@ export declare class EntriesController {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
 }

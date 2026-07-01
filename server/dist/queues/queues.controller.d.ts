@@ -1,9 +1,11 @@
 import { QueuesService } from './queues.service';
 import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
+import { QueueEventService } from '../queue-events/queue-event.service';
 export declare class QueuesController {
     private service;
-    constructor(service: QueuesService);
+    private queueEventService;
+    constructor(service: QueuesService, queueEventService: QueueEventService);
     findAll(req: any): Promise<{
         id: string;
         createdAt: Date;
@@ -48,4 +50,14 @@ export declare class QueuesController {
         adminId: string;
     }>;
     delete(id: string, req: any): Promise<void>;
+    getStats(queueId: string): Promise<{
+        totalJoined: number;
+        totalNoShows: number;
+        totalArrived: number;
+        totalLeft: number;
+        totalCalled: number;
+        noShowRate: number;
+        completionRate: number;
+        dropOffRate: number;
+    }>;
 }

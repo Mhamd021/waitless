@@ -6,10 +6,11 @@ import { BullModule } from '@nestjs/bullmq';
 import { GatewayModule } from '../gateway/gateway.module';
 import { EntryRepository } from './entries.repository';
 import { QueuesModule } from '../queues/queues.module';
+import { QueueEventModule } from '../queue-events/queue-event.module';
 
 
 @Module({
-  imports: [AdminModule,    BullModule.registerQueue({ name: 'notifications' }), GatewayModule,QueuesModule],
+  imports: [AdminModule,    BullModule.registerQueue({ name: 'notifications' }), GatewayModule,QueuesModule,QueueEventModule],
   providers: [EntriesService, EntryRepository],
   controllers: [EntriesController],
   exports: [EntriesService,EntryRepository],

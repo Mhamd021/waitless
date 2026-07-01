@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActiveEntry } from './dto/entry-response.dto';
+import { EntryStatus, Prisma } from '../../generated/prisma/client';
 export declare class EntryRepository {
     private prisma;
     constructor(prisma: PrismaService);
@@ -16,26 +17,26 @@ export declare class EntryRepository {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }) | null>;
-    findFirst(where: any): Promise<{
+    findFirst(where: Prisma.EntryWhereInput): Promise<{
         id: string;
         email: string | null;
         createdAt: Date;
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     } | null>;
-    create(data: any): Promise<{
+    create(data: Prisma.EntryUncheckedCreateInput): Promise<{
         queue: {
             name: string;
         };
@@ -46,26 +47,12 @@ export declare class EntryRepository {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
-    update(where: any, data: any): Promise<{
-        id: string;
-        email: string | null;
-        createdAt: Date;
-        name: string;
-        status: import("../../generated/prisma/client").$Enums.EntryStatus;
-        position: number;
-        token: string;
-        notifiedAt: Date | null;
-        servedAt: Date | null;
-        completedAt: Date | null;
-        queueId: string;
-    }>;
-    count(where: any): Promise<number>;
     findActive(queueId: string): Promise<ActiveEntry[]>;
     findCompleted(queueId: string, take: number): Promise<{
         id: string;
@@ -74,11 +61,11 @@ export declare class EntryRepository {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }[]>;
     findLastInQueue(queueId: string): Promise<{
         id: string;
@@ -87,25 +74,25 @@ export declare class EntryRepository {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     } | null>;
     countAhead(queueId: string, position: number): Promise<number>;
-    findByStatus(queueId: string, status: string): Promise<{
+    findByStatus(queueId: string, status: EntryStatus): Promise<{
         id: string;
         email: string | null;
         createdAt: Date;
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     } | null>;
     findNextWaiting(queueId: string): Promise<{
         id: string;
@@ -114,11 +101,11 @@ export declare class EntryRepository {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     } | null>;
     findSecondWaiting(queueId: string, excludeId: string): Promise<{
         id: string;
@@ -127,11 +114,11 @@ export declare class EntryRepository {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     } | null>;
     findByIdAndAdmin(entryId: string, adminId: string): Promise<{
         id: string;
@@ -140,37 +127,36 @@ export declare class EntryRepository {
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     } | null>;
-    updateById(id: string, data: any): Promise<{
+    updateById(id: string, data: Prisma.EntryUpdateInput): Promise<{
         id: string;
         email: string | null;
         createdAt: Date;
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
-    updateByToken(token: string, data: any): Promise<{
+    updateByToken(token: string, data: Prisma.EntryUpdateInput): Promise<{
         id: string;
         email: string | null;
         createdAt: Date;
         name: string;
         status: import("../../generated/prisma/client").$Enums.EntryStatus;
         position: number;
+        queueId: string;
         token: string;
         notifiedAt: Date | null;
         servedAt: Date | null;
         completedAt: Date | null;
-        queueId: string;
     }>;
-    findOpenById(queueId: string): void;
 }

@@ -8,7 +8,8 @@ import { UpdateQueueDto } from './dto/update-queue.dto';
 export class QueueRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(adminId: string):Promise<Queue[]> {
+  async findAll(adminId: string):Promise<Queue[]> 
+  {
       return this.prisma.queue.findMany({
         where: { adminId },
         include: {
@@ -66,7 +67,8 @@ export class QueueRepository {
        await this.prisma.queue.delete({ where: { id, adminId } });
     }
   
-    async toggleOpen(id: string, adminId: string) :Promise<Queue> {
+    async toggleOpen(id: string, adminId: string) :Promise<Queue> 
+    {
       const queue = await this.findOne(id, adminId);
       return this.prisma.queue.update({
         where: { id },
@@ -79,7 +81,8 @@ export class QueueRepository {
     //     where: { id: queueId, adminId },
     //   });
     // }
-    async findOpenById(queueId: string): Promise<Queue | null> {
+    async findOpenById(queueId: string): Promise<Queue | null> 
+    {
       
       return this.prisma.queue.findUnique({
         where: { id: queueId , isOpen: true}

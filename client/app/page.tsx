@@ -16,6 +16,9 @@ export default function AdminPage() {
   const [newQueue, setNewQueue]   = useState({ name: '', description: '' });
   const [showForm, setShowForm]   = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const [stats, setStats] = useState<any | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
 
 
   useEffect(() => {
@@ -45,12 +48,12 @@ export default function AdminPage() {
   }
 
   async function fetchQueues(t: string) {
-    const res = await fetch(`${API}/queues`, {
-      headers: { Authorization: `Bearer ${t}` },
-    });
-    const data = await res.json();
-    setQueues(data);
-  }
+  const res = await fetch(`${API}/queues`, {
+    headers: { Authorization: `Bearer ${t}` },
+  });
+  const data = await res.json();
+  setQueues(Array.isArray(data) ? data : []);
+}
 
   async function fetchEntries(queueId: string, t?: string) {
   const authToken = t || token;  
@@ -64,7 +67,7 @@ export default function AdminPage() {
  async function selectQueue(queue: any) {
   setActiveQueue(queue);
   fetchEntries(queue.id);
-
+  fetchStats(queue.id); 
   socketRef.current?.disconnect();
 
   const s = io(WS!);
@@ -78,6 +81,22 @@ export default function AdminPage() {
   });
   
   socketRef.current = s;
+}
+
+
+async function fetchStats(queueId: string) {
+  setStatsLoading(true);
+  try {
+    const res = await fetch(`${API}/queues/${queueId}/stats`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    setStats(data);
+  } catch {
+    setStats(null);
+  } finally {
+    setStatsLoading(false);
+  }
 }
 
   async function createQueue() {
@@ -111,6 +130,7 @@ export default function AdminPage() {
     headers: { Authorization: `Bearer ${token}` },
   });
   fetchEntries(activeQueue.id);
+  fetchStats(activeQueue.id);
 }
 
 async function markNoShow() {
@@ -120,6 +140,7 @@ async function markNoShow() {
     headers: { Authorization: `Bearer ${token}` },
   });
   fetchEntries(activeQueue.id);
+  fetchStats(activeQueue.id);
 }
 
   
@@ -131,6 +152,7 @@ async function markNoShow() {
       headers: { Authorization: `Bearer ${token}` },
     });
     fetchEntries(activeQueue.id);
+    fetchStats(activeQueue.id);
   }
  const [qr, setQr] = useState(null);
 const [open, setOpen] = useState(false);
@@ -421,7 +443,83 @@ function downloadQr(base64: string) {
               </table>
             </div>
           </>
+          
         )}
+        {/* Analytics Card */}
+         {
+          statsLoading ? 
+            
+          (
+            <div className="mt-6 bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <p className="text-gray-600 text-sm">Loading analytics...</p>
+  </div>
+          ): stats && (
+  <div className="mt-6 bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+      Queue Analytics
+    </h3>
+    <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="bg-gray-800 rounded-lg p-4">
+        <p className="text-gray-500 text-xs mb-1">Total Joined</p>
+        <p className="text-white text-2xl font-bold">{stats.totalJoined}</p>
+      </div>
+      <div className="bg-gray-800 rounded-lg p-4">
+        <p className="text-gray-500 text-xs mb-1">Completed</p>
+        <p className="text-green-400 text-2xl font-bold">{stats.totalArrived}</p>
+      </div>
+      <div className="bg-gray-800 rounded-lg p-4">
+        <p className="text-gray-500 text-xs mb-1">No Shows</p>
+        <p className="text-red-400 text-2xl font-bold">{stats.totalNoShows}</p>
+      </div>
+      <div className="bg-gray-800 rounded-lg p-4">
+        <p className="text-gray-500 text-xs mb-1">Left Early</p>
+        <p className="text-yellow-400 text-2xl font-bold">{stats.totalLeft}</p>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-3 gap-4">
+      <div className="bg-gray-800 rounded-lg p-4">
+        <p className="text-gray-500 text-xs mb-2">Completion Rate</p>
+        <div className="flex items-end gap-2">
+          <p className="text-white text-xl font-bold">{stats.completionRate}%</p>
+        </div>
+        <div className="mt-2 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-green-500 rounded-full transition-all"
+            style={{ width: `${stats.completionRate}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="bg-gray-800 rounded-lg p-4">
+        <p className="text-gray-500 text-xs mb-2">No-Show Rate</p>
+        <div className="flex items-end gap-2">
+          <p className="text-white text-xl font-bold">{stats.noShowRate}%</p>
+        </div>
+        <div className="mt-2 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-red-500 rounded-full transition-all"
+            style={{ width: `${stats.noShowRate}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="bg-gray-800 rounded-lg p-4">
+        <p className="text-gray-500 text-xs mb-2">Drop-off Rate</p>
+        <div className="flex items-end gap-2">
+          <p className="text-white text-xl font-bold">{stats.dropOffRate}%</p>
+        </div>
+        <div className="mt-2 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-yellow-500 rounded-full transition-all"
+            style={{ width: `${stats.dropOffRate}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+)
+         }
       </main>
     </div>
   );

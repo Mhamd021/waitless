@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActiveEntry } from './dto/entry-response.dto';
+import { EntryStatus, Prisma } from '../../generated/prisma/client';
 
 @Injectable()
 export class EntryRepository {
@@ -16,22 +17,16 @@ export class EntryRepository {
     });
   }
 
-  async findFirst(where: any) {
+  async findFirst(where: Prisma.EntryWhereInput) {
     return this.prisma.entry.findFirst({ where });
   }
 
-  async create(data: any) {
+  async create(data: Prisma.EntryUncheckedCreateInput) {
     return this.prisma.entry.create({ data, include: { queue: { select: { name: true } } } });
   }
 
-  async update(where: any, data: any) {
-    return this.prisma.entry.update({ where, data });
-  }
 
-  async count(where: any): Promise<number> {
-    return this.prisma.entry.count({ where });
-  }
-
+  
   async findActive(queueId: string): Promise<ActiveEntry[]> {
     return this.prisma.entry.findMany({
       where: {
@@ -74,9 +69,9 @@ async countAhead(queueId: string, position: number): Promise<number> {
   });
 }
 
-async findByStatus(queueId: string, status: string) {
+async findByStatus(queueId: string, status: EntryStatus) {
   return this.prisma.entry.findFirst({
-    where: { queueId, status: status as any },
+    where: { queueId, status: status  },
     orderBy: { position: 'asc' },
   });
 }
@@ -105,11 +100,11 @@ async findByIdAndAdmin(entryId: string, adminId: string) {
   });
 }
 
-async updateById(id: string, data: any) {
+async updateById(id: string, data: Prisma.EntryUpdateInput) {
   return this.prisma.entry.update({ where: { id }, data });
 }
 
-async updateByToken(token: string, data: any) {
+async updateByToken(token: string, data: Prisma.EntryUpdateInput) {
   return this.prisma.entry.update({ where: { token }, data });
 }
   

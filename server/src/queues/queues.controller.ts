@@ -8,11 +8,14 @@ import { CreateQueueDto } from './dto/create-queue.dto';
 import { UpdateQueueDto } from './dto/update-queue.dto';
 import { JwtGuard } from '../admin/jwt.guard';
 import * as QRCode from 'qrcode';
+import { QueueEventService } from '../queue-events/queue-event.service';
 
 @Controller('queues')
 @UseGuards(JwtGuard) 
 export class QueuesController {
-  constructor(private service: QueuesService) {}
+  constructor(private service: QueuesService,
+              private queueEventService: QueueEventService
+  ) {}
 
   @Get()
   findAll(@Request() req: any) {
@@ -54,5 +57,10 @@ async getQrCode(@Param('id') id: string) {
   delete(@Param('id') id: string, @Request() req: any) {
     return this.service.delete(id, req.user.sub);
   }
+
+  @Get(':id/stats')
+async getStats(@Param('id') queueId: string) {
+  return this.queueEventService.getQueueStats(queueId);
+}
 
 }

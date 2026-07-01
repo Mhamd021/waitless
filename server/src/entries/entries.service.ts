@@ -12,6 +12,8 @@ import { Entry } from '../../generated/prisma/client';
 import { JoinQueueResponse, EntryStatusResponse } from './dto/entry-response.dto';
 import { EntryRepository } from './entries.repository';
 import { QueueRepository } from '../queues/queue.repository';
+import { QueueEventService } from '../queue-events/queue-event.service';
+import { QueueEventType } from '../queue-events/queue-event.schema';
 
 @Injectable()
 export class EntriesService {
@@ -20,9 +22,11 @@ export class EntriesService {
     private queueRepo: QueueRepository,
     @InjectQueue('notifications') private notifQueue: Queue,
     private gateway: QueueGateway,
-  ) {}
+    private queueEventService: QueueEventService,
+  ) { }
 
   async join(queueId: string, dto: JoinQueueDto): Promise<JoinQueueResponse> {
+
     const queue = await this.queueRepo.findOpenById(queueId);
     if (!queue) throw new NotFoundException('Queue not found or closed');
 
@@ -38,7 +42,12 @@ export class EntriesService {
 
     const entries = await this.entryRepo.findActive(queueId);
     this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
-
+    await this.queueEventService.record({
+      queueId,
+      eventType: QueueEventType.CUSTOMER_JOINED,
+      token: entry.token,
+      metadata: { position: entry.position },
+    });
     return {
       id: entry.id,
       name: entry.name,
@@ -73,6 +82,7 @@ export class EntriesService {
   }
 
   async callNext(queueId: string, adminId: string): Promise<Entry> {
+
     const queue = await this.queueRepo.findOne(queueId, adminId);
     if (!queue) throw new NotFoundException('Queue not found');
 
@@ -112,6 +122,12 @@ export class EntriesService {
     const entries = await this.entryRepo.findActive(queueId);
     this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
 
+    await this.queueEventService.record({
+      queueId,
+      eventType: QueueEventType.CALLED_NEXT,
+      token: next.token,
+      metadata: { entryId: next.id, position: next.position },
+    });
     return updated;
   }
 
@@ -142,6 +158,12 @@ export class EntriesService {
     const entries = await this.entryRepo.findActive(entry.queueId);
     this.gateway.notifyQueueUpdate(entry.queueId, { type: 'entry-left', entries });
 
+    await this.queueEventService.record({
+      queueId: entry.queueId,
+      eventType: QueueEventType.CUSTOMER_LEFT,
+      token: entry.token,
+      metadata: { entryId: entry.id, position: entry.position },
+    });
     return updated;
   }
 
@@ -166,6 +188,13 @@ export class EntriesService {
     const entries = await this.entryRepo.findActive(queueId);
     this.gateway.notifyQueueUpdate(queueId, { type: 'next-called', entries });
 
+    await this.queueEventService.record({
+      queueId,
+      eventType: QueueEventType.ARRIVED,
+      token: called.token,
+      metadata: { entryId: called.id, position: called.position },
+    })
+
     return updated;
   }
 
@@ -178,6 +207,12 @@ export class EntriesService {
 
     await this.entryRepo.updateById(called.id, { status: 'NO_SHOW' });
 
+    await this.queueEventService.record({
+      queueId,
+      eventType: QueueEventType.NO_SHOW,
+      token: called.token,
+      metadata: { entryId: called.id },
+    });
     return this.callNext(queueId, adminId);
   }
 

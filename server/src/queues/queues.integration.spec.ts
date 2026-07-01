@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { QueuesController } from './queues.controller';
 import { QueuesService } from './queues.service';
 import { QueueRepository } from './queue.repository';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common/exceptions/not-found.exception';
 
 describe('Queues integration', () => {
   let controller: QueuesController;
@@ -55,6 +55,20 @@ describe('Queues integration', () => {
         }
       }
     ),
+    update: jest.fn(
+      async (id:string,adminId:string,dto:any) => 
+        {
+          return {
+             id,
+          ...dto,
+          adminId,
+          isOpen: true,
+          }
+        }
+    ),
+
+    delete:  jest.fn(async () => undefined),
+
     
   };
 
@@ -132,7 +146,77 @@ describe('Queues integration', () => {
         adminId: req.user.sub,
         isOpen: true,
       });
+     
+    });
+
+    it('throws NotFoundException when queue is not found', async () => {
+  mockQueueRepository.findOne.mockRejectedValue(
+    new NotFoundException('Queue not found'),
+  );
+
+  await expect(controller.findOne('bad-id', req)).rejects.toThrow(
+    NotFoundException,
+  );
+
+  expect(mockQueueRepository.findOne).toHaveBeenCalledWith(
+    'bad-id',
+    req.user.sub,
+  );
+});
+
+it('updates a queue', async () => {
+  const dto = {
+    name: 'Updated Queue',
+    description: 'Updated description',
+  };
+
+  const result = await controller.update('queue-id-123', dto, req);
+
+  expect(mockQueueRepository.update).toHaveBeenCalledWith(
+    'queue-id-123',
+    req.user.sub,
+    dto,
+  );
+
+  expect(result).toEqual({
+    id: 'queue-id-123',
+    name: 'Updated Queue',
+    description: 'Updated description',
+    adminId: req.user.sub,
+    isOpen: true,
+    });
     });
       
-   
+    it('throws NotFoundException when updating a missing queue', async () => {
+  const dto = {
+    name: 'Updated Queue',
+  };
+
+  mockQueueRepository.update.mockRejectedValue(
+    new NotFoundException('Queue not found'),
+  );
+
+  await expect(
+    controller.update('bad-id', dto, req),
+  ).rejects.toThrow(NotFoundException);
+
+  expect(mockQueueRepository.update).toHaveBeenCalledWith(
+    'bad-id',
+    req.user.sub,
+    dto,
+  );
+});
+it('deletes a queue', async () => {
+
+  await expect(
+    controller.delete('queue-id-123', req),
+  ).resolves.toBeUndefined();
+
+  expect(mockQueueRepository.delete).toHaveBeenCalledWith(
+    'queue-id-123',
+    req.user.sub,
+  );
+});
+
+
 });
